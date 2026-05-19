@@ -43,7 +43,17 @@ def fig_to_base64(fig):
     plt.close(fig)
     return img_str
 
-
+def make_json_serializable(obj):
+    """Convert numpy types to native Python types for JSON serialization."""
+    if isinstance(obj, dict):
+        return {k: make_json_serializable(v) for k, v in obj.items()}
+    elif isinstance(obj, list):
+        return [make_json_serializable(v) for v in obj]
+    elif hasattr(obj, 'item'):  # numpy scalars
+        return obj.item()
+    elif hasattr(obj, 'tolist'):  # numpy arrays
+        return obj.tolist()
+    return obj
 
 @tool
 def kaplan_meier_analysis(stratify_by: str) -> dict:
@@ -98,13 +108,13 @@ def kaplan_meier_analysis(stratify_by: str) -> dict:
     ax.set_title(f"Kaplan-Meier — stratified by {stratify_by}", fontweight="bold")
     ax.legend(fontsize=8, loc="upper right")
 
-    return {
+    return make_json_serializable({
         "stratify_by": stratify_by,
         "logrank_p": float(res.p_value),
-        "significant": res.p_value < 0.05,
+        "significant": bool(res.p_value < 0.05),
         "groups": results,
         "plot_base64": fig_to_base64(fig)
-    }
+    })
 
 @tool
 def cox_model(features: list) -> dict:
@@ -154,11 +164,11 @@ def cox_model(features: list) -> dict:
             transform=ax.transAxes, ha="right", fontsize=10,
             bbox=dict(boxstyle="round,pad=0.4", fc="#F4F1DE", ec=COLORS["primary"]))
 
-    return {
+    return make_json_serializable({
         "c_index": round(cph.concordance_index_, 3),
         "hazard_ratios": summary.to_dict(),
         "plot_base64": fig_to_base64(fig)
-    }
+    })
 
 @tool
 def ml_prediction(cutoff_months: int = 60) -> dict:
@@ -261,7 +271,7 @@ def describe_dataset() -> dict:
 
     plt.tight_layout()
 
-    return {
+    return make_json_serializable({
         "n_patients": len(df),
         "os_event_rate": round(df["os_event"].mean(), 3),
         "median_followup_months": round(df["os_months"].median(), 1),
@@ -270,4 +280,4 @@ def describe_dataset() -> dict:
         "er_positive_pct": round((df["er"] == "Positive").mean(), 3),
         "her2_positive_pct": round((df["her2"] == "Positive").mean(), 3),
         "plot_base64": fig_to_base64(fig)
-    }
+    })

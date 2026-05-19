@@ -11,7 +11,7 @@ from langgraph.graph import StateGraph, END
 from langgraph.prebuilt import ToolNode
 import operator
 from langchain_core.messages import ToolMessage
-import json
+import json, ast
 
 from src.tools import (
     describe_dataset,
@@ -120,17 +120,18 @@ def run_agent(question: str) -> dict:
         text = str(final_message)
     
     # Extract plots from all tool results
-
-
     plots = []
     for msg in result["messages"]:
         if isinstance(msg, ToolMessage):
             try:
                 data = json.loads(msg.content)
-                if "plot_base64" in data:
-                    plots.append(data["plot_base64"])
             except (json.JSONDecodeError, TypeError):
-                pass
+                try:
+                    data = ast.literal_eval(msg.content)
+                except:
+                    data = {}
+            if isinstance(data, dict) and "plot_base64" in data:
+                plots.append(data["plot_base64"])
 
     return {
         "response": text,
