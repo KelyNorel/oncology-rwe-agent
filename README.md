@@ -38,17 +38,29 @@ Scientific Report + Figures
 
 ## Screenshots
 
-### Dataset Overview
-*Agent response to "Describe the dataset" — generates a 4-panel visual summary*
+#### Dataset Overview
+*Agent response to "Describe the dataset" — 4-panel visual summary*
 ![Dataset Overview](docs/screenshots/screenshot_01_dataset_overview.png)
 
-### Survival Analysis
-*Agent response to "Compare survival by molecular subtype"*
+### Survival by Molecular Subtype
+*Kaplan-Meier curves stratified by PAM50 subtype (log-rank p<0.0001)*
 ![Subtype Survival](docs/screenshots/screenshot_02_subtype_survival.png)
 
 ### Domain Boundary Handling
-*Agent correctly declines out-of-scope questions and redirects to clinical research*
+*Agent correctly declines out-of-scope questions*
 ![Domain Boundary](docs/screenshots/screenshot_03_domain_boundary.png)
+
+### Hormone Therapy Analysis
+*Multi-tool response: dataset overview + KM curve + Cox model*
+![Hormone Analysis](docs/screenshots/screenshot_04_hormone_analysis.png)
+
+### High-Risk Patient Identification
+*Cox PH model identifying prognostic factors for 5-year mortality (C-index: 0.762)*
+![Cox High Risk](docs/screenshots/screenshot_05_cox_highrisk.png)
+
+### Clinical Prognostic Factors
+*Full multivariable analysis of clinical prognostic factors*
+![Clinical Factors](docs/screenshots/screenshot_06_clinical_factors.png)
 
 ## Dataset
 

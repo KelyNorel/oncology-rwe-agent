@@ -7,6 +7,8 @@ import base64
 from PIL import Image
 import io
 from src.agent import run_agent
+import time
+
 
 st.set_page_config(
     page_title="Oncology RWE Co-Scientist",
@@ -43,7 +45,7 @@ with st.sidebar:
     examples = [
     "Describe the dataset",
     "What clinical factors are most prognostic for survival in this cohort?",
-    "Compare survival by molecular subtype and explain the clinical implications.",
+    "Run a Kaplan-Meier analysis stratified by subtype.",
     "Is hormone therapy associated with better survival? Control for confounders.",
     "Which patients are at highest risk of dying within 5 years?",
     "What color is the sky?",  # tests domain boundary
@@ -69,14 +71,24 @@ if st.button("🔍 Run Analysis", type="primary", use_container_width=True):
         st.warning("Please enter a research question.")
     else:
         with st.spinner("🤖 Co-scientist is analyzing..."):
-            try:
-                result = run_agent(question)
-            except Exception as e:
-                if "rate_limit" in str(e).lower():
-                    st.error("⏳ Rate limit reached — please wait 60 seconds and try again.")
-                else:
-                    st.error(f"An error occurred: {str(e)}")
-                st.stop()
+            max_retries = 2
+            for attempt in range(max_retries):
+                try:
+                    result = run_agent(question)
+                    break
+                except Exception as e:
+                    if "rate_limit" in str(e).lower() and attempt < max_retries - 1:
+                        placeholder = st.empty()
+                        for remaining in range(60, 0, -1):
+                            placeholder.warning(f"⏳ Rate limit reached — retrying in {remaining}s...")
+                            time.sleep(1)
+                        placeholder.empty()
+                    elif "rate_limit" in str(e).lower():
+                        st.error("⏳ Rate limit reached — please try again in a moment.")
+                        st.stop()
+                    else:
+                        st.error(f"An error occurred: {str(e)}")
+                        st.stop()
 
         st.divider()
 
