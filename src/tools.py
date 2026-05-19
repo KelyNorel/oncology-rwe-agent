@@ -37,11 +37,13 @@ def load_data():
 
 def fig_to_base64(fig):
     buf = io.BytesIO()
-    fig.savefig(buf, format="png", bbox_inches="tight", dpi=120, facecolor="white")
+    fig.savefig(buf, format="png", bbox_inches="tight", dpi=200, facecolor="white")
     buf.seek(0)
     img_str = base64.b64encode(buf.read()).decode("utf-8")
     plt.close(fig)
     return img_str
+
+
 
 @tool
 def kaplan_meier_analysis(stratify_by: str) -> dict:
@@ -207,8 +209,58 @@ def describe_dataset() -> dict:
     """
     Return a summary of the METABRIC dataset including
     patient counts, event rates, and key variable distributions.
+    Includes a visual overview plot.
     """
     df = load_data()
+
+    fig, axes = plt.subplots(2, 2, figsize=(10, 7))
+    fig.patch.set_facecolor("white")
+    fig.suptitle("METABRIC Dataset Overview", fontweight="bold",
+                 color=COLORS["primary"], fontsize=13)
+
+    # 1. Overall KM
+    ax = axes[0, 0]
+    kmf = KaplanMeierFitter()
+    kmf.fit(df["os_months"], df["os_event"], label=f"All patients (n={len(df)})")
+    kmf.plot_survival_function(ax=ax, color=COLORS["primary"], ci_show=True)
+    ax.set_title("Overall Survival")
+    ax.set_xlabel("Time (months)")
+    ax.set_ylabel("Survival probability")
+
+    # 2. Subtype distribution
+    ax = axes[0, 1]
+    subtype_counts = df["subtype"].value_counts()
+    colors_list = [COLORS["primary"], COLORS["secondary"],
+                   COLORS["warm"], COLORS["gray"], "#9B5DE5", "#F72585"]
+    ax.bar(subtype_counts.index, subtype_counts.values,
+           color=colors_list[:len(subtype_counts)], edgecolor="white")
+    ax.set_title("Molecular Subtype Distribution")
+    ax.set_xlabel("Subtype")
+    ax.set_ylabel("Count")
+    ax.tick_params(axis='x', rotation=30)
+
+    # 3. Age distribution
+    ax = axes[1, 0]
+    ax.hist(df["age"].dropna(), bins=25, color=COLORS["secondary"],
+            edgecolor="white", alpha=0.85)
+    ax.axvline(df["age"].median(), color=COLORS["warm"],
+               linestyle="--", lw=2, label=f"Median: {df['age'].median():.0f}y")
+    ax.set_title("Age Distribution")
+    ax.set_xlabel("Age (years)")
+    ax.set_ylabel("Count")
+    ax.legend(fontsize=9)
+
+    # 4. Event rate summary
+    ax = axes[1, 1]
+    labels = ["Deceased", "Alive/Censored"]
+    values = [df["os_event"].sum(), len(df) - df["os_event"].sum()]
+    ax.pie(values, labels=labels, autopct="%1.1f%%",
+           colors=[COLORS["warm"], COLORS["secondary"]],
+           startangle=90, wedgeprops=dict(edgecolor="white", linewidth=2))
+    ax.set_title("OS Event Rate")
+
+    plt.tight_layout()
+
     return {
         "n_patients": len(df),
         "os_event_rate": round(df["os_event"].mean(), 3),
@@ -217,4 +269,5 @@ def describe_dataset() -> dict:
         "subtype_counts": df["subtype"].value_counts().to_dict(),
         "er_positive_pct": round((df["er"] == "Positive").mean(), 3),
         "her2_positive_pct": round((df["her2"] == "Positive").mean(), 3),
+        "plot_base64": fig_to_base64(fig)
     }

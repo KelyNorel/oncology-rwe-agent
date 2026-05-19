@@ -10,6 +10,8 @@ from langchain_core.messages import BaseMessage, HumanMessage, AIMessage
 from langgraph.graph import StateGraph, END
 from langgraph.prebuilt import ToolNode
 import operator
+from langchain_core.messages import ToolMessage
+import json
 
 from src.tools import (
     describe_dataset,
@@ -25,7 +27,7 @@ load_dotenv()
 llm = ChatAnthropic(
     model="claude-sonnet-4-20250514",
     api_key=os.getenv("ANTHROPIC_API_KEY"),
-    max_tokens=4096,
+    max_tokens=1500,
 )
 
 tools = [describe_dataset, kaplan_meier_analysis, cox_model, ml_prediction]
@@ -37,33 +39,44 @@ class AgentState(TypedDict):
     plots: Annotated[list, operator.add]
 
 # ── Nodes ─────────────────────────────────────────────────────────────────────
+def strip_plots_from_messages(messages):
+    """Remove plot_base64 from tool results to reduce token usage."""
+    cleaned = []
+    for msg in messages:
+        if isinstance(msg, ToolMessage):
+            try:
+                data = json.loads(msg.content)
+                if "plot_base64" in data:
+                    data_clean = {k: v for k, v in data.items() if k != "plot_base64"}
+                    msg = ToolMessage(
+                        content=json.dumps(data_clean),
+                        tool_call_id=msg.tool_call_id
+                    )
+            except (json.JSONDecodeError, TypeError):
+                pass
+        cleaned.append(msg)
+    return cleaned
+
 def scientist_node(state: AgentState) -> AgentState:
     """The co-scientist reasons and decides what to do next."""
-    messages = [{"role": "system", "content": SYSTEM_PROMPT}] + list(state["messages"])
+    cleaned_messages = strip_plots_from_messages(list(state["messages"]))
+    messages = [{"role": "system", "content": SYSTEM_PROMPT}] + cleaned_messages
     response = llm_with_tools.invoke(messages)
     return {"messages": [response], "plots": []}
 
 def extract_plots(state: AgentState) -> AgentState:
     """Extract base64 plots from tool results and add to state."""
+    from langchain_core.messages import ToolMessage
+    import json
+    
     plots = []
     for msg in state["messages"]:
-        if hasattr(msg, "content") and isinstance(msg.content, list):
-            for block in msg.content:
-                if isinstance(block, dict) and "plot_base64" in block.get("text", "{}"):
-                    import json
-                    try:
-                        data = json.loads(block["text"])
-                        if "plot_base64" in data:
-                            plots.append(data["plot_base64"])
-                    except:
-                        pass
-        elif hasattr(msg, "content") and isinstance(msg.content, str):
+        if isinstance(msg, ToolMessage):
             try:
-                import json
                 data = json.loads(msg.content)
                 if "plot_base64" in data:
                     plots.append(data["plot_base64"])
-            except:
+            except (json.JSONDecodeError, TypeError):
                 pass
     return {"messages": [], "plots": plots}
 
@@ -107,18 +120,17 @@ def run_agent(question: str) -> dict:
         text = str(final_message)
     
     # Extract plots from all tool results
+
+
     plots = []
     for msg in result["messages"]:
-        if hasattr(msg, "content"):
-            content = msg.content
-            if isinstance(content, str):
-                try:
-                    import json
-                    data = json.loads(content)
-                    if "plot_base64" in data:
-                        plots.append(data["plot_base64"])
-                except:
-                    pass
+        if isinstance(msg, ToolMessage):
+            try:
+                data = json.loads(msg.content)
+                if "plot_base64" in data:
+                    plots.append(data["plot_base64"])
+            except (json.JSONDecodeError, TypeError):
+                pass
 
     return {
         "response": text,

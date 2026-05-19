@@ -36,6 +36,20 @@ Scientific Report + Figures
 - `cox_model` — multivariable Cox PH model with forest plot
 - `ml_prediction` — ML-based mortality prediction (Logistic Regression, Random Forest)
 
+## Screenshots
+
+### Dataset Overview
+*Agent response to "Describe the dataset" — generates a 4-panel visual summary*
+![Dataset Overview](docs/screenshots/screenshot_01_dataset_overview.png)
+
+### Survival Analysis
+*Agent response to "Compare survival by molecular subtype"*
+![Subtype Survival](docs/screenshots/screenshot_02_subtype_survival.png)
+
+### Domain Boundary Handling
+*Agent correctly declines out-of-scope questions and redirects to clinical research*
+![Domain Boundary](docs/screenshots/screenshot_03_domain_boundary.png)
+
 ## Dataset
 
 **METABRIC** (Molecular Taxonomy of Breast Cancer International Consortium)  
