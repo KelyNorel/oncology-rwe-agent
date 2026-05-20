@@ -47,7 +47,7 @@ with st.sidebar:
     "What clinical factors are most prognostic for survival in this cohort?",
     "Run a Kaplan-Meier analysis stratified by subtype.",
     "Is hormone therapy associated with better survival? Control for confounders.",
-    "Which patients are at highest risk of dying within 5 years?",
+    "Predict 5-year mortality risk using machine learning",
     "What color is the sky?",  # tests domain boundary
     ]
     for ex in examples:
@@ -147,8 +147,10 @@ if st.button("🔍 Run Analysis", type="primary", use_container_width=True):
 </body>
 </html>"""
 
+        has_figures = len(result["plots"]) > 0
+
         st.download_button(
-            label="⬇️ Download Report (HTML with figures)",
+            label="⬇️ Download Report (HTML with figures)" if has_figures else "⬇️ Download Report (HTML)",
             data=report_html,
             file_name="rwe_analysis_report.html",
             mime="text/html",
