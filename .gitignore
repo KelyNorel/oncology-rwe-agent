@@ -6,3 +6,4 @@ __pycache__/
 *.txt.DS_Store
 **/.DS_Store
 go_venv.txt
+_to_delete/

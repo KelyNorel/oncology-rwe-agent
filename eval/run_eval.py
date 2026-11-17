@@ -18,6 +18,16 @@ from pathlib import Path
 
 from langchain_core.messages import AIMessage, ToolMessage
 
+import anthropic
+
+# Setup errors that would make every run fail; abort the eval instead of scoring them.
+FATAL_API_ERRORS = (
+    anthropic.NotFoundError,
+    anthropic.AuthenticationError,
+    anthropic.PermissionDeniedError,
+    anthropic.BadRequestError,
+)
+
 CASES = Path(__file__).parent / "cases.json"
 RESULTS = Path(__file__).parent / "results"
 
@@ -43,6 +53,10 @@ def trace_run(question: str, recursion_limit: int) -> dict:
             config={"recursion_limit": recursion_limit},
         )
         error = None
+    except FATAL_API_ERRORS:
+        # Wrong model name, bad key, no credit: every run would fail the same way.
+        # Stop instead of recording agent "failures" that are really setup errors.
+        raise
     except Exception as exc:  # recorded as a failure mode, not raised
         state, error = None, f"{type(exc).__name__}: {exc}"
         traceback.print_exc()
@@ -101,6 +115,7 @@ def main():
             r = json.loads(line)
             done.add((r["case_id"], r["run"]))
 
+    _check_model()
     todo = [(c, i) for c in cases for i in range(args.runs) if (c["id"], i) not in done]
     print(f"{len(todo)} runs to do ({len(done)} already recorded)")
 
@@ -111,6 +126,13 @@ def main():
             f.write(json.dumps(record) + "\n")
 
     print(f"Done. Traces in {out}. Next: python -m eval.score")
+
+
+def _check_model():
+    """Fail in seconds, not after 75 runs, if the model or key is wrong."""
+    from src.agent import llm, MODEL_NAME
+    print(f"Model: {MODEL_NAME}")
+    llm.invoke("Reply with OK.")
 
 
 if __name__ == "__main__":

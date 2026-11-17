@@ -24,8 +24,11 @@ from src.prompts import SYSTEM_PROMPT
 load_dotenv()
 
 # ── LLM ───────────────────────────────────────────────────────────────────────
+# claude-sonnet-4-20250514 was retired; override with ANTHROPIC_MODEL if needed.
+MODEL_NAME = os.getenv("ANTHROPIC_MODEL", "claude-sonnet-5-5")
+
 llm = ChatAnthropic(
-    model="claude-sonnet-4-20250514",
+    model=MODEL_NAME,
     api_key=os.getenv("ANTHROPIC_API_KEY"),
     max_tokens=1500,
 )
