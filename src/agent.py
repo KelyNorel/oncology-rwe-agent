@@ -64,22 +64,6 @@ def scientist_node(state: AgentState) -> AgentState:
     response = llm_with_tools.invoke(messages)
     return {"messages": [response], "plots": []}
 
-def extract_plots(state: AgentState) -> AgentState:
-    """Extract base64 plots from tool results and add to state."""
-    from langchain_core.messages import ToolMessage
-    import json
-    
-    plots = []
-    for msg in state["messages"]:
-        if isinstance(msg, ToolMessage):
-            try:
-                data = json.loads(msg.content)
-                if "plot_base64" in data:
-                    plots.append(data["plot_base64"])
-            except (json.JSONDecodeError, TypeError):
-                pass
-    return {"messages": [], "plots": plots}
-
 def should_continue(state: AgentState) -> str:
     """Decide whether to call tools or end."""
     last_message = state["messages"][-1]
@@ -93,7 +77,6 @@ tool_node = ToolNode(tools)
 graph = StateGraph(AgentState)
 graph.add_node("scientist", scientist_node)
 graph.add_node("tools", tool_node)
-graph.add_node("extract_plots", extract_plots)
 
 graph.set_entry_point("scientist")
 graph.add_conditional_edges("scientist", should_continue, {

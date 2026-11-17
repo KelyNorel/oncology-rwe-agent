@@ -19,6 +19,8 @@ from sklearn.metrics import roc_auc_score
 from langchain.tools import tool
 
 DATA_PATH = "data/processed/clinical_clean.csv"
+MIN_GROUP_SIZE = 5   # KM groups smaller than this are reported, not fitted
+MIN_EVENTS = 20      # minimum events and non-events for ml_prediction
 
 COLORS = {
     "primary":   "#2E4057",
@@ -81,10 +83,13 @@ def kaplan_meier_analysis(stratify_by: str) -> dict:
 
     groups = df[stratify_by].dropna().unique()
     results = {}
+    skipped = {}
 
     for group in groups:
         mask = df[stratify_by] == group
-        if mask.sum() < 5:
+        if mask.sum() < MIN_GROUP_SIZE:
+            skipped[str(group)] = {"n": int(mask.sum()),
+                                   "reason": f"fewer than {MIN_GROUP_SIZE} patients"}
             continue
         kmf = KaplanMeierFitter()
         kmf.fit(df.loc[mask, "os_months"], df.loc[mask, "os_event"],
@@ -113,6 +118,7 @@ def kaplan_meier_analysis(stratify_by: str) -> dict:
         "logrank_p": float(res.p_value),
         "significant": bool(res.p_value < 0.05),
         "groups": results,
+        "skipped_groups": skipped,
         "plot_base64": fig_to_base64(fig)
     })
 
@@ -128,6 +134,7 @@ def cox_model(features: list) -> dict:
     available = ["age", "grade", "tumor_size", "lymph_nodes", "npi",
                  "er_bin", "her2_bin", "chemo_bin", "hormone_bin"]
 
+    ignored = [f for f in features if f not in available]
     features = [f for f in features if f in available]
     if not features:
         return {"error": f"No valid features. Available: {available}"}
@@ -166,6 +173,8 @@ def cox_model(features: list) -> dict:
 
     return make_json_serializable({
         "c_index": round(cph.concordance_index_, 3),
+        "features_used": features,
+        "ignored_features": ignored,
         "hazard_ratios": summary.to_dict(),
         "plot_base64": fig_to_base64(fig)
     })
@@ -177,6 +186,9 @@ def ml_prediction(cutoff_months: int = 60) -> dict:
     Default cutoff is 60 months (5 years).
     Returns AUC scores for Logistic Regression and Random Forest.
     """
+    if cutoff_months <= 0:
+        return {"error": f"cutoff_months must be positive, got {cutoff_months}"}
+
     df = load_data()
     df["outcome"] = ((df["os_months"] <= cutoff_months) &
                      (df["os_event"] == 1)).astype(int)
@@ -186,6 +198,12 @@ def ml_prediction(cutoff_months: int = 60) -> dict:
     ml_df = df[features + ["outcome"]].dropna()
     X = ml_df[features]
     y = ml_df["outcome"]
+
+    n_events, n_nonevents = int(y.sum()), int((1 - y).sum())
+    if min(n_events, n_nonevents) < MIN_EVENTS:
+        return {"error": (f"Only {n_events} deaths and {n_nonevents} non-deaths within "
+                          f"{cutoff_months} months; need at least {MIN_EVENTS} of each "
+                          f"for a reliable AUC. Try a longer cutoff.")}
 
     X_train, X_test, y_train, y_test = train_test_split(
         X, y, test_size=0.25, random_state=42, stratify=y)
@@ -205,14 +223,15 @@ def ml_prediction(cutoff_months: int = 60) -> dict:
         aucs[name] = round(roc_auc_score(y_test,
                      model.predict_proba(X_test_s)[:, 1]), 3)
 
-    return {
+    return make_json_serializable({
         "cutoff_months": cutoff_months,
         "outcome_rate": round(y.mean(), 3),
         "n_positive": int(y.sum()),
         "auc_scores": aucs,
         "best_model": max(aucs, key=aucs.get),
-        "best_auc": max(aucs.values())
-    }
+        "best_auc": max(aucs.values()),
+        "n_test": int(len(y_test)),
+    })
 
 @tool
 def describe_dataset() -> dict:

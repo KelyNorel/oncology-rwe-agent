@@ -98,6 +98,11 @@ oncology-rwe-agent/
 │   ├── tools.py          # survival analysis tools (KM, Cox, ML)
 │   ├── agent.py          # LangGraph agent graph
 │   └── prompts.py        # system prompts
+├── tests/                # pytest suite (synthetic cohort, scripted LLM; runs in CI)
+├── eval/
+│   ├── cases.json        # 25 labeled evaluation questions
+│   ├── run_eval.py       # runs the agent and records full traces
+│   └── score.py          # scores traces and writes eval/results/report.md
 ├── app.py                # Streamlit UI
 ├── requirements.txt
 ├── .gitignore
@@ -122,6 +127,49 @@ echo "ANTHROPIC_API_KEY=your_key_here" > .env
 # Run the app
 streamlit run app.py
 ```
+
+## Testing & Evaluation
+
+### Tests (`tests/`, run in GitHub Actions on every push)
+
+34 pytest tests that need no API key and no patient data: the tools run on a synthetic
+cohort with the METABRIC schema (hazard tied to grade and lymph nodes, so the Cox test
+checks that the model recovers the true risk factors), and the LangGraph control flow
+runs against a scripted LLM (tool routing, multi-tool loops, out-of-scope questions,
+tool errors returned to the model, recursion limit).
+
+```bash
+pip install pytest
+python -m pytest
+```
+
+Writing the tests surfaced and fixed four silent failure modes in the tools:
+
+| Failure | Before | After |
+|---|---|---|
+| `ml_prediction` with cutoff ≤ 0 | crashed (single-class training data) | returns an error the agent can explain |
+| `ml_prediction` with very short cutoff | reported an AUC from ~7 deaths, no warning | requires ≥ 20 events and non-events |
+| `cox_model` with an unsupported covariate | dropped it silently; the agent believed it had adjusted for it | returns `ignored_features` |
+| Kaplan-Meier groups with < 5 patients | dropped silently | returned as `skipped_groups` |
+
+### Agent evaluation (`eval/`)
+
+25 labeled questions in five categories: single-tool, multi-tool (including confounder
+adjustment), variables the dataset does not contain, out-of-scope requests, and ambiguous
+requests. Each question runs several times and every trace is scored on:
+
+- **Tool selection:** recall of the expected analyses and precision of the calls made
+- **Argument accuracy:** stratification variable, required Cox covariates, ML cutoff
+- **Failure handling:** says when the data cannot answer the question; declines out-of-scope requests without running analyses
+- **Numeric traceability:** decimals in the answer that match no tool output, listed for review as candidate hallucinations
+- **Consistency, latency, LLM steps and tokens** across repeated runs
+
+```bash
+python -m eval.run_eval --runs 3   # needs ANTHROPIC_API_KEY and the METABRIC data
+python -m eval.score               # writes eval/results/report.md
+```
+
+Results: _pending first full run._
 
 ## Key Design Decisions
 
