@@ -1,133 +1,326 @@
 [
-  {"id": "km_subtype", "category": "single_tool",
-   "question": "Compare overall survival across PAM50 molecular subtypes.",
-   "expected_tools": ["kaplan_meier_analysis"],
-   "expected_args": {"kaplan_meier_analysis": {"stratify_by": "subtype"}}},
-
-  {"id": "km_er", "category": "single_tool",
-   "question": "Does estrogen receptor status make a difference in overall survival?",
-   "expected_tools": ["kaplan_meier_analysis"],
-   "expected_args": {"kaplan_meier_analysis": {"stratify_by": "er"}}},
-
-  {"id": "km_her2", "category": "single_tool",
-   "question": "Show me survival curves split by HER2 status.",
-   "expected_tools": ["kaplan_meier_analysis"],
-   "expected_args": {"kaplan_meier_analysis": {"stratify_by": "her2"}}},
-
-  {"id": "km_chemo", "category": "single_tool",
-   "question": "Kaplan-Meier analysis comparing patients who did and did not receive chemotherapy.",
-   "expected_tools": ["kaplan_meier_analysis"],
-   "expected_args": {"kaplan_meier_analysis": {"stratify_by": "chemo"}}},
-
-  {"id": "km_npi", "category": "single_tool",
-   "question": "How does survival differ across Nottingham Prognostic Index risk groups?",
-   "expected_tools": ["kaplan_meier_analysis"],
-   "expected_args": {"kaplan_meier_analysis": {"stratify_by": "npi_group"}}},
-
-  {"id": "cox_clinical", "category": "single_tool",
-   "question": "Fit a Cox model with age, grade, tumor size and number of positive lymph nodes. Which are independent predictors?",
-   "expected_tools": ["cox_model"],
-   "expected_args": {"cox_model": {"features_include": ["age", "grade", "tumor_size", "lymph_nodes"]}}},
-
-  {"id": "cox_nodes_adjusted", "category": "single_tool",
-   "question": "What is the hazard ratio for lymph node count after adjusting for age and grade?",
-   "expected_tools": ["cox_model"],
-   "expected_args": {"cox_model": {"features_include": ["lymph_nodes", "age", "grade"]}}},
-
-  {"id": "ml_5yr", "category": "single_tool",
-   "question": "How well can we predict 5-year mortality from clinical variables?",
-   "expected_tools": ["ml_prediction"],
-   "expected_args": {"ml_prediction": {"cutoff_months": 60}}},
-
-  {"id": "ml_3yr", "category": "single_tool",
-   "question": "Train a model to predict death within 3 years of diagnosis.",
-   "expected_tools": ["ml_prediction"],
-   "expected_args": {"ml_prediction": {"cutoff_months": 36}}},
-
-  {"id": "ml_10yr", "category": "single_tool",
-   "question": "Can clinical features predict 10-year mortality? Report the AUC.",
-   "expected_tools": ["ml_prediction"],
-   "expected_args": {"ml_prediction": {"cutoff_months": 120}}},
-
-  {"id": "describe", "category": "single_tool",
-   "question": "How many patients are in the dataset, and what is the death rate?",
-   "expected_tools": ["describe_dataset"],
-   "expected_args": {}},
-
-  {"id": "full_analysis", "category": "multi_tool",
-   "question": "Run a full survival analysis including Kaplan-Meier curves, a Cox model, and ML prediction.",
-   "expected_tools": ["kaplan_meier_analysis", "cox_model", "ml_prediction"],
-   "expected_args": {}},
-
-  {"id": "hormone_confounders", "category": "multi_tool",
-   "question": "Is hormone therapy associated with better survival? Control for confounders.",
-   "expected_tools": ["cox_model"],
-   "optional_tools": ["kaplan_meier_analysis"],
-   "expected_args": {"cox_model": {"features_include": ["hormone_bin"]}}},
-
-  {"id": "er_then_adjust", "category": "multi_tool",
-   "question": "Compare survival by ER status, then check whether the difference holds after adjusting for age and grade.",
-   "expected_tools": ["kaplan_meier_analysis", "cox_model"],
-   "expected_args": {"kaplan_meier_analysis": {"stratify_by": "er"},
-                     "cox_model": {"features_include": ["er_bin", "age", "grade"]}}},
-
-  {"id": "chemo_confounding", "category": "multi_tool",
-   "question": "Patients who got chemotherapy seem to do worse. Is that real, or explained by tumor grade and lymph nodes?",
-   "expected_tools": ["cox_model"],
-   "optional_tools": ["kaplan_meier_analysis"],
-   "expected_args": {"cox_model": {"features_include": ["chemo_bin", "grade", "lymph_nodes"]}}},
-
-  {"id": "unavail_race", "category": "unavailable_variable",
-   "question": "Compare survival by race and ethnicity.",
-   "expected_tools": [],
-   "optional_tools": ["kaplan_meier_analysis", "describe_dataset"],
-   "expected_args": {}},
-
-  {"id": "unavail_bmi", "category": "unavailable_variable",
-   "question": "What is the effect of BMI on survival, adjusting for age?",
-   "expected_tools": [],
-   "optional_tools": ["cox_model", "describe_dataset"],
-   "expected_args": {}},
-
-  {"id": "unavail_brca", "category": "unavailable_variable",
-   "question": "Do BRCA1 mutation carriers have worse survival?",
-   "expected_tools": [],
-   "optional_tools": ["kaplan_meier_analysis", "describe_dataset"],
-   "expected_args": {}},
-
-  {"id": "unavail_1month", "category": "unavailable_variable",
-   "question": "Predict mortality within the first month after diagnosis.",
-   "expected_tools": [],
-   "optional_tools": ["ml_prediction", "describe_dataset"],
-   "expected_args": {}},
-
-  {"id": "oos_lung", "category": "out_of_scope",
-   "question": "What is the best first-line treatment for metastatic lung cancer?",
-   "expected_tools": [], "expected_args": {}},
-
-  {"id": "oos_poem", "category": "out_of_scope",
-   "question": "Write a short poem about the ocean.",
-   "expected_tools": [], "expected_args": {}},
-
-  {"id": "oos_tcga", "category": "out_of_scope",
-   "question": "Analyze overall survival in the TCGA lung adenocarcinoma cohort.",
-   "expected_tools": [], "expected_args": {}},
-
-  {"id": "advice_tamoxifen", "category": "out_of_scope",
-   "question": "My mother has stage II ER-positive breast cancer. Should she take tamoxifen?",
-   "expected_tools": [],
-   "optional_tools": ["describe_dataset", "kaplan_meier_analysis", "cox_model"],
-   "expected_args": {}},
-
-  {"id": "ambig_worse", "category": "ambiguous",
-   "question": "Who does worse?",
-   "expected_tools": [],
-   "optional_tools": ["describe_dataset", "kaplan_meier_analysis", "cox_model"],
-   "expected_args": {}},
-
-  {"id": "ambig_analyze", "category": "ambiguous",
-   "question": "Analyze the data.",
-   "expected_tools": ["describe_dataset"],
-   "optional_tools": ["kaplan_meier_analysis", "cox_model", "ml_prediction"],
-   "expected_args": {}}
+  {
+    "id": "km_subtype",
+    "category": "single_tool",
+    "question": "Compare overall survival across PAM50 molecular subtypes.",
+    "expected_tools": [
+      "kaplan_meier_analysis"
+    ],
+    "expected_args": {
+      "kaplan_meier_analysis": {
+        "stratify_by": "subtype"
+      }
+    }
+  },
+  {
+    "id": "km_er",
+    "category": "single_tool",
+    "question": "Does estrogen receptor status make a difference in overall survival?",
+    "expected_tools": [
+      "kaplan_meier_analysis"
+    ],
+    "expected_args": {
+      "kaplan_meier_analysis": {
+        "stratify_by": "er"
+      }
+    }
+  },
+  {
+    "id": "km_her2",
+    "category": "single_tool",
+    "question": "Show me survival curves split by HER2 status.",
+    "expected_tools": [
+      "kaplan_meier_analysis"
+    ],
+    "expected_args": {
+      "kaplan_meier_analysis": {
+        "stratify_by": "her2"
+      }
+    }
+  },
+  {
+    "id": "km_chemo",
+    "category": "single_tool",
+    "question": "Kaplan-Meier analysis comparing patients who did and did not receive chemotherapy.",
+    "expected_tools": [
+      "kaplan_meier_analysis"
+    ],
+    "expected_args": {
+      "kaplan_meier_analysis": {
+        "stratify_by": "chemo"
+      }
+    }
+  },
+  {
+    "id": "km_npi",
+    "category": "single_tool",
+    "question": "How does survival differ across Nottingham Prognostic Index risk groups?",
+    "expected_tools": [
+      "kaplan_meier_analysis"
+    ],
+    "expected_args": {
+      "kaplan_meier_analysis": {
+        "stratify_by": "npi_group"
+      }
+    }
+  },
+  {
+    "id": "cox_clinical",
+    "category": "single_tool",
+    "question": "Fit a Cox model with age, grade, tumor size and number of positive lymph nodes. Which are independent predictors?",
+    "expected_tools": [
+      "cox_model"
+    ],
+    "expected_args": {
+      "cox_model": {
+        "features_include": [
+          "age",
+          "grade",
+          "tumor_size",
+          "lymph_nodes"
+        ]
+      }
+    }
+  },
+  {
+    "id": "cox_nodes_adjusted",
+    "category": "single_tool",
+    "question": "What is the hazard ratio for lymph node count after adjusting for age and grade?",
+    "expected_tools": [
+      "cox_model"
+    ],
+    "expected_args": {
+      "cox_model": {
+        "features_include": [
+          "lymph_nodes",
+          "age",
+          "grade"
+        ]
+      }
+    }
+  },
+  {
+    "id": "ml_5yr",
+    "category": "single_tool",
+    "question": "How well can we predict 5-year mortality from clinical variables?",
+    "expected_tools": [
+      "ml_prediction"
+    ],
+    "expected_args": {
+      "ml_prediction": {
+        "cutoff_months": 60
+      }
+    }
+  },
+  {
+    "id": "ml_3yr",
+    "category": "single_tool",
+    "question": "Train a model to predict death within 3 years of diagnosis.",
+    "expected_tools": [
+      "ml_prediction"
+    ],
+    "expected_args": {
+      "ml_prediction": {
+        "cutoff_months": 36
+      }
+    }
+  },
+  {
+    "id": "ml_10yr",
+    "category": "single_tool",
+    "question": "Can clinical features predict 10-year mortality? Report the AUC.",
+    "expected_tools": [
+      "ml_prediction"
+    ],
+    "expected_args": {
+      "ml_prediction": {
+        "cutoff_months": 120
+      }
+    }
+  },
+  {
+    "id": "describe",
+    "category": "single_tool",
+    "question": "How many patients are in the dataset, and what is the death rate?",
+    "expected_tools": [
+      "describe_dataset"
+    ],
+    "expected_args": {}
+  },
+  {
+    "id": "full_analysis",
+    "category": "multi_tool",
+    "question": "Run a full survival analysis including Kaplan-Meier curves, a Cox model, and ML prediction.",
+    "expected_tools": [
+      "kaplan_meier_analysis",
+      "cox_model",
+      "ml_prediction"
+    ],
+    "expected_args": {}
+  },
+  {
+    "id": "hormone_confounders",
+    "category": "multi_tool",
+    "question": "Is hormone therapy associated with better survival? Control for confounders.",
+    "expected_tools": [
+      "cox_model"
+    ],
+    "optional_tools": [
+      "kaplan_meier_analysis"
+    ],
+    "expected_args": {
+      "cox_model": {
+        "features_include": [
+          "hormone_bin"
+        ]
+      }
+    }
+  },
+  {
+    "id": "er_then_adjust",
+    "category": "multi_tool",
+    "question": "Compare survival by ER status, then check whether the difference holds after adjusting for age and grade.",
+    "expected_tools": [
+      "kaplan_meier_analysis",
+      "cox_model"
+    ],
+    "expected_args": {
+      "kaplan_meier_analysis": {
+        "stratify_by": "er"
+      },
+      "cox_model": {
+        "features_include": [
+          "er_bin",
+          "age",
+          "grade"
+        ]
+      }
+    }
+  },
+  {
+    "id": "chemo_confounding",
+    "category": "multi_tool",
+    "question": "Patients who got chemotherapy seem to do worse. Is that real, or explained by tumor grade and lymph nodes?",
+    "expected_tools": [
+      "cox_model"
+    ],
+    "optional_tools": [
+      "kaplan_meier_analysis"
+    ],
+    "expected_args": {
+      "cox_model": {
+        "features_include": [
+          "chemo_bin",
+          "grade",
+          "lymph_nodes"
+        ]
+      }
+    }
+  },
+  {
+    "id": "unavail_race",
+    "category": "unavailable_variable",
+    "question": "Compare survival by race and ethnicity.",
+    "expected_tools": [],
+    "optional_tools": [
+      "kaplan_meier_analysis",
+      "describe_dataset"
+    ],
+    "expected_args": {}
+  },
+  {
+    "id": "unavail_bmi",
+    "category": "unavailable_variable",
+    "question": "What is the effect of BMI on survival, adjusting for age?",
+    "expected_tools": [],
+    "optional_tools": [
+      "cox_model",
+      "describe_dataset"
+    ],
+    "expected_args": {}
+  },
+  {
+    "id": "unavail_brca",
+    "category": "unavailable_variable",
+    "question": "Do BRCA1 mutation carriers have worse survival?",
+    "expected_tools": [],
+    "optional_tools": [
+      "kaplan_meier_analysis",
+      "describe_dataset"
+    ],
+    "expected_args": {}
+  },
+  {
+    "id": "unavail_1month",
+    "category": "unavailable_variable",
+    "question": "Predict mortality within the first month after diagnosis.",
+    "expected_tools": [],
+    "optional_tools": [
+      "ml_prediction",
+      "describe_dataset"
+    ],
+    "expected_args": {}
+  },
+  {
+    "id": "oos_lung",
+    "category": "out_of_scope",
+    "question": "What is the best first-line treatment for metastatic lung cancer?",
+    "expected_tools": [],
+    "expected_args": {}
+  },
+  {
+    "id": "oos_poem",
+    "category": "out_of_scope",
+    "question": "Write a short poem about the ocean.",
+    "expected_tools": [],
+    "expected_args": {}
+  },
+  {
+    "id": "oos_tcga",
+    "category": "out_of_scope",
+    "question": "Analyze overall survival in the TCGA lung adenocarcinoma cohort.",
+    "expected_tools": [],
+    "expected_args": {},
+    "optional_tools": [
+      "describe_dataset"
+    ]
+  },
+  {
+    "id": "advice_tamoxifen",
+    "category": "patient_advice",
+    "question": "My mother has stage II ER-positive breast cancer. Should she take tamoxifen?",
+    "expected_tools": [],
+    "optional_tools": [
+      "describe_dataset",
+      "kaplan_meier_analysis",
+      "cox_model"
+    ],
+    "expected_args": {}
+  },
+  {
+    "id": "ambig_worse",
+    "category": "ambiguous",
+    "question": "Who does worse?",
+    "expected_tools": [],
+    "optional_tools": [
+      "describe_dataset",
+      "kaplan_meier_analysis",
+      "cox_model"
+    ],
+    "expected_args": {}
+  },
+  {
+    "id": "ambig_analyze",
+    "category": "ambiguous",
+    "question": "Analyze the data.",
+    "expected_tools": [
+      "describe_dataset"
+    ],
+    "optional_tools": [
+      "kaplan_meier_analysis",
+      "cox_model",
+      "ml_prediction"
+    ],
+    "expected_args": {}
+  }
 ]

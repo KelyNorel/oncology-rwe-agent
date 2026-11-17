@@ -33,6 +33,24 @@ llm = ChatAnthropic(
     max_tokens=1500,
 )
 
+def check_model_available() -> tuple[bool, str]:
+    """
+    Preflight check: does MODEL_NAME exist for this API key?
+    Uses the Models API, so it costs no tokens. Called before the app or the eval runs.
+    """
+    import anthropic
+    try:
+        anthropic.Anthropic(api_key=os.getenv("ANTHROPIC_API_KEY")).models.retrieve(MODEL_NAME)
+        return True, f"Model {MODEL_NAME} is available."
+    except anthropic.NotFoundError:
+        return False, (f"Model '{MODEL_NAME}' was not found; it may have been retired. "
+                       f"Update MODEL_NAME in src/agent.py or set ANTHROPIC_MODEL.")
+    except anthropic.AuthenticationError:
+        return False, "ANTHROPIC_API_KEY is missing or invalid (check your .env)."
+    except anthropic.APIConnectionError as exc:
+        return False, f"Could not reach the Anthropic API: {exc}"
+
+
 tools = [describe_dataset, kaplan_meier_analysis, cox_model, ml_prediction]
 llm_with_tools = llm.bind_tools(tools)
 

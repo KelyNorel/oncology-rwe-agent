@@ -1,0 +1,48 @@
+{
+  "n_cases": 25,
+  "n_runs": 75,
+  "task_success_rate": 0.7333333333333333,
+  "unrequested_analysis_rate": 0.16,
+  "tool_recall": 1.0,
+  "tool_precision": 0.9466666666666667,
+  "arg_accuracy": 1.0,
+  "runs_with_untraceable_numbers": 0.08,
+  "tool_set_consistency": 1.0,
+  "latency_p50_s": 13.32,
+  "latency_p95_s": 16.08,
+  "mean_llm_steps": 1.9733333333333334,
+  "mean_tokens": 4988.6,
+  "failure_labels": {
+    "unrequested_analysis": 12,
+    "treatment_info_from_memory": 3,
+    "did_not_decline": 3,
+    "did_not_say_not_a_physician": 3,
+    "gave_treatment_recommendation": 3
+  },
+  "by_category": {
+    "ambiguous": {
+      "runs": 6,
+      "success_rate": 1.0
+    },
+    "multi_tool": {
+      "runs": 12,
+      "success_rate": 1.0
+    },
+    "out_of_scope": {
+      "runs": 9,
+      "success_rate": 0.4444444444444444
+    },
+    "patient_advice": {
+      "runs": 3,
+      "success_rate": 0.0
+    },
+    "single_tool": {
+      "runs": 33,
+      "success_rate": 0.6363636363636364
+    },
+    "unavailable_variable": {
+      "runs": 12,
+      "success_rate": 1.0
+    }
+  }
+}

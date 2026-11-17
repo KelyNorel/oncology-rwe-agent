@@ -6,7 +6,7 @@ import streamlit as st
 import base64
 from PIL import Image
 import io
-from src.agent import run_agent
+from src.agent import run_agent, check_model_available
 import time
 
 
@@ -30,6 +30,15 @@ div.stButton > button[kind="primary"]:hover {
 }
 </style>
 """, unsafe_allow_html=True)
+
+@st.cache_resource
+def _model_status():
+    return check_model_available()
+
+_model_ok, _model_msg = _model_status()
+if not _model_ok:
+    st.error(_model_msg)
+    st.stop()
 
 st.title("🔬 Oncology RWE Co-Scientist")
 st.markdown("""

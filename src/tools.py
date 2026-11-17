@@ -66,7 +66,9 @@ def kaplan_meier_analysis(stratify_by: str) -> dict:
     """
     df = load_data()
 
-    # NPI groups
+    # NPI groups (cutoffs returned in the output so the agent never has to assume them)
+    npi_cutoffs = "Excellent < 2.4 <= Good < 3.4 <= Moderate < 5.4 <= Poor"
+
     def npi_group(score):
         if score < 2.4: return "Excellent"
         elif score < 3.4: return "Good"
@@ -119,6 +121,7 @@ def kaplan_meier_analysis(stratify_by: str) -> dict:
         "significant": bool(res.p_value < 0.05),
         "groups": results,
         "skipped_groups": skipped,
+        **({"group_definition": npi_cutoffs} if stratify_by == "npi_group" else {}),
         "plot_base64": fig_to_base64(fig)
     })
 

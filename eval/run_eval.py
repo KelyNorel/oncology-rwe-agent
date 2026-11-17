@@ -130,9 +130,11 @@ def main():
 
 def _check_model():
     """Fail in seconds, not after 75 runs, if the model or key is wrong."""
-    from src.agent import llm, MODEL_NAME
-    print(f"Model: {MODEL_NAME}")
-    llm.invoke("Reply with OK.")
+    from src.agent import check_model_available
+    ok, message = check_model_available()
+    print(message)
+    if not ok:
+        raise SystemExit(1)
 
 
 if __name__ == "__main__":
